@@ -6,96 +6,183 @@
 <title>Czółko 🎮</title>
 <script src="/socket.io/socket.io.js"></script>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-  .screen { display: none; flex-direction: column; align-items: center; gap: 16px; width: 90%; max-width: 500px; }
+  body { font-family: 'Poppins', sans-serif; background: #0d0d1a; color: #eee; min-height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  
+  /* TŁO ANIMOWANE */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(ellipse at 20% 50%, #1a0533 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, #001a33 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, #0d1a00 0%, transparent 50%);
+    animation: bgPulse 8s ease-in-out infinite alternate;
+    z-index: -1;
+  }
+  @keyframes bgPulse {
+    0% { transform: scale(1) rotate(0deg); }
+    100% { transform: scale(1.1) rotate(3deg); }
+  }
+
+  .screen { display: none; flex-direction: column; align-items: center; gap: 20px; width: 90%; max-width: 520px; }
   .screen.active { display: flex; }
-  h1 { font-size: 2.5rem; color: #e94560; }
-  h2 { font-size: 1.4rem; color: #aaa; }
-  input { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 1rem; background: #16213e; color: #eee; text-align: center; }
-  button { width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 1rem; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
-  button:hover { opacity: 0.85; }
-  .btn-main { background: #e94560; color: white; }
-  .btn-sec { background: #0f3460; color: white; }
-  .btn-vote { background: #533483; color: white; padding: 10px; font-size: 0.95rem; }
-  .code-box { background: #e94560; padding: 16px 32px; border-radius: 12px; font-size: 2rem; font-weight: bold; letter-spacing: 6px; }
-  .players-grid { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; width: 100%; }
-  .player-card { background: #16213e; border-radius: 12px; padding: 16px; text-align: center; min-width: 120px; flex: 1; }
-  .player-word { font-size: 1.3rem; font-weight: bold; color: #e94560; margin-bottom: 4px; }
-  .player-name { font-size: 0.9rem; color: #aaa; }
-  .player-card.me .player-word { color: #333; background: #333; border-radius: 4px; cursor: pointer; }
-  .player-card.me .player-word.revealed { color: #e94560; background: transparent; }
-  .vote-options { display: flex; flex-direction: column; gap: 8px; width: 100%; }
-  .error { color: #e94560; font-size: 0.9rem; }
-  .words-list { background: #16213e; padding: 12px; border-radius: 8px; width: 100%; }
-  .hint { font-size: 0.8rem; color: #888; text-align: center; }
+
+  /* LOGO */
+  .logo { font-size: 3rem; font-weight: 800; background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-align: center; line-height: 1; }
+  .logo-sub { font-size: 0.9rem; color: #888; letter-spacing: 3px; text-transform: uppercase; }
+
+  /* KARTY */
+  .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; width: 100%; backdrop-filter: blur(10px); }
+
+  input, textarea { width: 100%; padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); font-size: 1rem; background: rgba(255,255,255,0.07); color: #eee; font-family: 'Poppins', sans-serif; transition: border 0.2s; }
+  input:focus, textarea:focus { outline: none; border-color: #ff6b6b; }
+  input::placeholder, textarea::placeholder { color: #555; }
+
+  button { width: 100%; padding: 14px; border-radius: 12px; border: none; font-size: 1rem; cursor: pointer; font-weight: 600; font-family: 'Poppins', sans-serif; transition: all 0.2s; position: relative; overflow: hidden; }
+  button::after { content: ''; position: absolute; inset: 0; background: rgba(255,255,255,0.1); opacity: 0; transition: opacity 0.2s; }
+  button:hover::after { opacity: 1; }
+  button:active { transform: scale(0.97); }
+
+  .btn-main { background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: white; box-shadow: 0 4px 20px rgba(255,107,107,0.4); }
+  .btn-sec { background: linear-gradient(135deg, #48dbfb, #0abde3); color: #0d0d1a; }
+  .btn-green { background: linear-gradient(135deg, #1dd1a1, #10ac84); color: white; box-shadow: 0 4px 20px rgba(29,209,161,0.4); }
+  .btn-purple { background: linear-gradient(135deg, #ff9ff3, #f368e0); color: white; }
+
+  /* KOD LOBBY */
+  .code-box { background: linear-gradient(135deg, #ff6b6b, #ee5a24); padding: 16px 40px; border-radius: 16px; font-size: 2.5rem; font-weight: 800; letter-spacing: 8px; text-align: center; box-shadow: 0 8px 32px rgba(255,107,107,0.4); }
+  .code-hint { font-size: 0.8rem; color: #888; text-align: center; }
+
+  /* GRACZE W LOBBY */
+  .players-list { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+  .player-item { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+  .player-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 700; flex-shrink: 0; }
+  .player-item-name { font-weight: 600; }
+  .player-item-badge { font-size: 0.7rem; color: #feca57; background: rgba(254,202,87,0.15); padding: 2px 8px; border-radius: 20px; margin-left: auto; }
+
+  /* EKRAN PRZYPISYWANIA */
+  .assign-box { background: rgba(255,255,255,0.05); border: 2px solid rgba(255,107,107,0.4); border-radius: 20px; padding: 32px; text-align: center; width: 100%; }
+  .assign-target { font-size: 2rem; font-weight: 800; color: #feca57; margin: 8px 0; }
+  .assign-label { font-size: 0.85rem; color: #888; }
+
+  /* POKAŻ HASŁO - OVERLAY */
+  .word-reveal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; gap: 16px; backdrop-filter: blur(8px); animation: fadeIn 0.3s ease; }
+  .word-reveal.hidden { display: none; }
+  @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+  .reveal-name { font-size: 1rem; color: #888; letter-spacing: 2px; text-transform: uppercase; }
+  .reveal-word { font-size: 3.5rem; font-weight: 800; background: linear-gradient(135deg, #feca57, #ff9ff3); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-align: center; }
+  .reveal-hidden { font-size: 1.5rem; color: #555; }
+  .reveal-timer { width: 120px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden; }
+  .reveal-timer-bar { height: 100%; background: linear-gradient(90deg, #ff6b6b, #feca57); border-radius: 2px; animation: timerBar 3s linear forwards; }
+  @keyframes timerBar { from { width: 100%; } to { width: 0%; } }
+
+  /* GRA - KARTY GRACZY */
+  .game-grid { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; width: 100%; }
+  .game-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 20px 16px; text-align: center; min-width: 130px; flex: 1; position: relative; transition: transform 0.2s; }
+  .game-card:hover { transform: translateY(-2px); }
+  .game-card.me { border-color: rgba(255,107,107,0.4); background: rgba(255,107,107,0.05); }
+  .game-word { font-size: 1.4rem; font-weight: 800; color: #feca57; margin-bottom: 6px; }
+  .game-word.hidden-word { color: #1a1a2e; background: #1a1a2e; border-radius: 6px; user-select: none; }
+  .game-name { font-size: 0.85rem; color: #888; }
+  .game-me-badge { position: absolute; top: 8px; right: 8px; font-size: 0.6rem; background: rgba(255,107,107,0.3); color: #ff6b6b; padding: 2px 6px; border-radius: 10px; }
+
+  .section-title { font-size: 0.75rem; color: #666; text-transform: uppercase; letter-spacing: 2px; text-align: center; }
+  .error { color: #ff6b6b; font-size: 0.85rem; text-align: center; }
+  .waiting-text { color: #888; font-size: 0.9rem; text-align: center; }
+
+  /* EMOJI DEKORACJE */
+  .deco { font-size: 3rem; text-align: center; }
+  .deco-small { font-size: 1.5rem; }
 </style>
 </head>
 <body>
 
+<!-- OVERLAY POKAZYWANIA HASŁA -->
+<div class="word-reveal hidden" id="word-reveal">
+  <div class="reveal-name" id="reveal-name"></div>
+  <div id="reveal-content"></div>
+  <div class="reveal-timer"><div class="reveal-timer-bar" id="reveal-timer-bar"></div></div>
+</div>
+
 <!-- EKRAN STARTOWY -->
 <div class="screen active" id="screen-home">
-  <h1>🎮 Czółko</h1>
-  <input id="nickname" placeholder="Twój nick" maxlength="16">
-  <button class="btn-main" onclick="createLobby()">Stwórz lobby</button>
-  <button class="btn-sec" onclick="showJoin()">Dołącz do lobby</button>
-  <div id="join-form" style="display:none; width:100%; display:flex; flex-direction:column; gap:8px;">
-    <input id="join-code" placeholder="Kod lobby (np. ABC12)" maxlength="5" style="text-transform:uppercase">
-    <button class="btn-sec" onclick="joinLobby()">Dołącz</button>
+  <div class="deco">🎮</div>
+  <div class="logo">Czółko</div>
+  <div class="logo-sub">Gra towarzyska</div>
+  <div class="card" style="display:flex;flex-direction:column;gap:12px;">
+    <input id="nickname" placeholder="✏️ Twój nick" maxlength="16">
+    <button class="btn-main" onclick="createLobby()">🏠 Stwórz lobby</button>
+    <button class="btn-sec" onclick="showJoin()">🔗 Dołącz do lobby</button>
+    <div id="join-form" style="display:none;flex-direction:column;gap:8px;">
+      <input id="join-code" placeholder="Kod lobby (np. ABC12)" maxlength="5" style="text-transform:uppercase;letter-spacing:4px;text-align:center;">
+      <button class="btn-purple" onclick="joinLobby()">▶ Dołącz</button>
+    </div>
   </div>
   <p class="error" id="home-error"></p>
 </div>
 
-<!-- EKRAN LOBBY (ADMIN) -->
+<!-- EKRAN LOBBY ADMIN -->
 <div class="screen" id="screen-lobby-admin">
-  <h2>Twoje lobby</h2>
+  <div class="deco">👑</div>
+  <div class="logo" style="font-size:1.8rem;">Twoje lobby</div>
   <div class="code-box" id="lobby-code-display"></div>
-  <p style="color:#888">Podaj ten kod innym graczom</p>
-  <h2>Lista słów (jedno na linię):</h2>
-  <textarea id="words-input" rows="6" style="width:100%;background:#16213e;color:#eee;border:none;border-radius:8px;padding:12px;font-size:1rem;" placeholder="pies&#10;samochód&#10;pizza&#10;..."></textarea>
-  <button class="btn-main" onclick="saveWords()">Zapisz słowa</button>
-  <div class="words-list" id="words-preview" style="display:none"></div>
-  <h2>Gracze w lobby:</h2>
-  <div class="players-grid" id="lobby-players"></div>
-  <button class="btn-main" onclick="startVoting()" id="btn-start" style="display:none">▶ Rozpocznij głosowanie</button>
+  <p class="code-hint">Podaj ten kod znajomym 👆</p>
+  <div class="card" style="display:flex;flex-direction:column;gap:10px;">
+    <p class="section-title">Gracze w lobby</p>
+    <div class="players-list" id="lobby-players"></div>
+  </div>
+  <button class="btn-green" onclick="startAssigning()" id="btn-start" style="display:none">🚀 Rozpocznij grę</button>
 </div>
 
-<!-- EKRAN LOBBY (GRACZ) -->
+<!-- EKRAN LOBBY GRACZ -->
 <div class="screen" id="screen-lobby-player">
-  <h2>Dołączyłeś do lobby</h2>
+  <div class="deco">⏳</div>
+  <div class="logo" style="font-size:1.8rem;">Lobby</div>
   <div class="code-box" id="lobby-code-player"></div>
-  <h2>Gracze:</h2>
-  <div class="players-grid" id="lobby-players-p"></div>
-  <p style="color:#aaa">Czekaj na start gry...</p>
+  <div class="card" style="display:flex;flex-direction:column;gap:10px;">
+    <p class="section-title">Gracze w lobby</p>
+    <div class="players-list" id="lobby-players-p"></div>
+  </div>
+  <p class="waiting-text">⏳ Czekaj na start gry...</p>
 </div>
 
-<!-- EKRAN GŁOSOWANIA -->
-<div class="screen" id="screen-voting">
-  <h2>Głosowanie 🗳️</h2>
-  <p>Jakie hasło pasuje do gracza:</p>
-  <h1 id="voting-target-name" style="font-size:1.8rem"></h1>
-  <p class="hint" id="voting-hint"></p>
-  <div class="vote-options" id="vote-options"></div>
-  <p style="color:#aaa; font-size:0.9rem" id="waiting-vote-msg" style="display:none"></p>
+<!-- EKRAN PRZYPISYWANIA HASEL -->
+<div class="screen" id="screen-assigning">
+  <div class="assign-box">
+    <p class="assign-label">Wpisz hasło dla:</p>
+    <div class="assign-target" id="assign-target-name"></div>
+    <p class="assign-label" id="assign-subtitle"></p>
+  </div>
+  <div id="assign-input-area" style="width:100%;display:flex;flex-direction:column;gap:12px;">
+    <input id="word-input" placeholder="Wpisz hasło..." maxlength="30">
+    <button class="btn-main" onclick="submitWord()">✅ Zatwierdź</button>
+  </div>
+  <p class="waiting-text hidden" id="assign-waiting">⏳ Czekaj na przypisanie hasła...</p>
 </div>
 
 <!-- EKRAN GRY -->
 <div class="screen" id="screen-game">
-  <h1>🎮 Gra!</h1>
-  <p class="hint">Kliknij na swoje hasło żeby je zobaczyć</p>
-  <div class="players-grid" id="game-players"></div>
+  <div class="deco">🎯</div>
+  <div class="logo" style="font-size:1.8rem;">Gra!</div>
+  <p class="waiting-text">Twoje hasło jest ukryte 🙈</p>
+  <div class="game-grid" id="game-players"></div>
 </div>
 
 <script>
 const socket = io();
 let myId = null;
 let isAdmin = false;
-let myLobbyCode = null;
+
+const COLORS = ['#ff6b6b','#feca57','#48dbfb','#ff9ff3','#1dd1a1','#ff9f43','#a29bfe','#fd79a8'];
+const EMOJIS = ['😎','🐱','🦊','🐸','🦁','🐼','🦄','🐙','🦋','🎃'];
 
 socket.on('connect', () => { myId = socket.id; });
 
 function showJoin() {
-  document.getElementById('join-form').style.display = 'flex';
+  const f = document.getElementById('join-form');
+  f.style.display = f.style.display === 'flex' ? 'none' : 'flex';
 }
 
 function getNick() {
@@ -117,67 +204,74 @@ function joinLobby() {
   socket.emit('joinLobby', { code, nickname });
 }
 
-function saveWords() {
-  const raw = document.getElementById('words-input').value;
-  const words = raw.split('\n').map(w => w.trim()).filter(w => w);
-  if (words.length < 2) { alert('Dodaj minimum 2 słowa!'); return; }
-  socket.emit('setWords', { words });
+function startAssigning() {
+  socket.emit('startAssigning');
 }
 
-function startVoting() {
-  socket.emit('startVoting');
+function submitWord() {
+  const word = document.getElementById('word-input').value.trim();
+  if (!word) return;
+  socket.emit('assignWord', { word });
+  document.getElementById('word-input').value = '';
 }
 
 socket.on('lobbyCreated', ({ code }) => {
-  myLobbyCode = code;
   document.getElementById('lobby-code-display').textContent = code;
   showScreen('screen-lobby-admin');
 });
 
 socket.on('joinedLobby', ({ code }) => {
-  myLobbyCode = code;
   document.getElementById('lobby-code-player').textContent = code;
   showScreen('screen-lobby-player');
 });
 
 socket.on('updatePlayers', (players) => {
-  renderPlayers('lobby-players', players, false);
-  renderPlayers('lobby-players-p', players, false);
-  if (isAdmin && players.length >= 2) {
-    document.getElementById('btn-start').style.display = 'block';
+  renderPlayersList('lobby-players', players);
+  renderPlayersList('lobby-players-p', players);
+  const btn = document.getElementById('btn-start');
+  if (btn) btn.style.display = players.length >= 2 ? 'block' : 'none';
+});
+
+socket.on('assignTurn', ({ targetId, targetNickname, assignerId }) => {
+  showScreen('screen-assigning');
+  document.getElementById('assign-target-name').textContent = targetNickname;
+  const inputArea = document.getElementById('assign-input-area');
+  const waitingMsg = document.getElementById('assign-waiting');
+
+  if (myId === assignerId) {
+    inputArea.style.display = 'flex';
+    waitingMsg.classList.add('hidden');
+    document.getElementById('assign-subtitle').textContent = 'Tylko Ty widzisz to pole 👇';
+  } else {
+    inputArea.style.display = 'none';
+    waitingMsg.classList.remove('hidden');
+    document.getElementById('assign-subtitle').textContent = '';
   }
 });
 
-socket.on('wordsSet', (words) => {
-  const box = document.getElementById('words-preview');
-  box.style.display = 'block';
-  box.innerHTML = '<b>Słowa:</b> ' + words.join(', ');
-});
+socket.on('showWord', ({ targetId, targetNickname, word }) => {
+  const overlay = document.getElementById('word-reveal');
+  const nameEl = document.getElementById('reveal-name');
+  const contentEl = document.getElementById('reveal-content');
+  const timerBar = document.getElementById('reveal-timer-bar');
 
-socket.on('votingFor', ({ targetId, targetNickname, words }) => {
-  showScreen('screen-voting');
-  document.getElementById('voting-target-name').textContent = targetNickname;
-  const optionsDiv = document.getElementById('vote-options');
-  const hintEl = document.getElementById('voting-hint');
+  overlay.classList.remove('hidden');
+  nameEl.textContent = targetNickname + ' dostaje hasło:';
 
-  if (targetId === myId) {
-    hintEl.textContent = 'To Twoje głosowanie — czekaj na innych!';
-    optionsDiv.innerHTML = '<p style="color:#aaa;text-align:center">Inni wybierają Twoje hasło...</p>';
-    return;
+  if (myId === targetId) {
+    contentEl.innerHTML = '<div class="reveal-hidden">🙈 To Twoje hasło — nie patrz!</div>';
+  } else {
+    contentEl.innerHTML = `<div class="reveal-word">${word}</div>`;
   }
 
-  hintEl.textContent = 'Wybierz hasło dla tego gracza:';
-  optionsDiv.innerHTML = '';
-  words.forEach(word => {
-    const btn = document.createElement('button');
-    btn.className = 'btn-vote';
-    btn.textContent = word;
-    btn.onclick = () => {
-      socket.emit('vote', { word });
-      optionsDiv.innerHTML = '<p style="color:#aaa;text-align:center">✅ Zagłosowałeś! Czekam na pozostałych...</p>';
-    };
-    optionsDiv.appendChild(btn);
-  });
+  // reset animacji timera
+  timerBar.style.animation = 'none';
+  timerBar.offsetHeight;
+  timerBar.style.animation = 'timerBar 3s linear forwards';
+
+  setTimeout(() => {
+    overlay.classList.add('hidden');
+  }, 3000);
 });
 
 socket.on('gameStarted', (players) => {
@@ -185,35 +279,41 @@ socket.on('gameStarted', (players) => {
   renderGamePlayers(players);
 });
 
-socket.on('error', (msg) => {
-  alert('❌ ' + msg);
-});
+socket.on('error', (msg) => alert('❌ ' + msg));
 
-function renderPlayers(containerId, players, showWords) {
+function renderPlayersList(containerId, players) {
   const div = document.getElementById(containerId);
+  if (!div) return;
   div.innerHTML = '';
-  players.forEach(p => {
-    const card = document.createElement('div');
-    card.className = 'player-card';
-    card.innerHTML = `<div class="player-name">${p.nickname}</div>`;
-    div.appendChild(card);
+  players.forEach((p, i) => {
+    const color = COLORS[i % COLORS.length];
+    const emoji = EMOJIS[i % EMOJIS.length];
+    const item = document.createElement('div');
+    item.className = 'player-item';
+    item.innerHTML = `
+      <div class="player-avatar" style="background:${color}22;color:${color}">${emoji}</div>
+      <div class="player-item-name">${p.nickname}</div>
+      ${p.id === myId ? '<div class="player-item-badge">TO TY</div>' : ''}
+    `;
+    div.appendChild(item);
   });
 }
 
 function renderGamePlayers(players) {
   const div = document.getElementById('game-players');
   div.innerHTML = '';
-  players.forEach(p => {
-    const card = document.createElement('div');
+  players.forEach((p, i) => {
+    const color = COLORS[i % COLORS.length];
+    const emoji = EMOJIS[i % EMOJIS.length];
     const isMe = p.id === myId;
-    card.className = 'player-card' + (isMe ? ' me' : '');
+    const card = document.createElement('div');
+    card.className = 'game-card' + (isMe ? ' me' : '');
     card.innerHTML = `
-      <div class="player-word${isMe ? '' : ''}">${p.word || '?'}</div>
-      <div class="player-name">${p.nickname}${isMe ? ' (Ty)' : ''}</div>
+      <div style="font-size:2rem;margin-bottom:8px">${emoji}</div>
+      <div class="game-word ${isMe ? 'hidden-word' : ''}" style="${isMe ? '' : 'color:' + color}">${isMe ? '???' : (p.word || '?')}</div>
+      <div class="game-name">${p.nickname}</div>
+      ${isMe ? '<div class="game-me-badge">TY</div>' : ''}
     `;
-    if (isMe) {
-      const wordDiv = card.querySelector('.player-word');
-    }
     div.appendChild(card);
   });
 }
